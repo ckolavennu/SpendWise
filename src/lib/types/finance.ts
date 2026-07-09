@@ -23,13 +23,14 @@ export interface Transaction {
 	id: string;
 	type: TransactionType;
 	amount: number;
-	categoryId: string;
+	category: string;
 	paymentMethod: PaymentMethod;
-	note?: string;
+	note: string;
 	transactionDate: string;
 	createdAt: string;
 	updatedAt: string;
 }
+
 
 export interface MonthlyBudget {
 	id: string;
@@ -48,4 +49,13 @@ export interface CategoryBudget {
 	limitAmount: number;
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface CreateTransactionInput {
+	type: TransactionType;
+	amount: number;
+	category: string;
+	paymentMethod: PaymentMethod;
+	note: string;
+	transactionDate: string;
 }
