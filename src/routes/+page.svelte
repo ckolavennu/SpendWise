@@ -1,9 +1,19 @@
 <script lang="ts">
-	import { formatCurrency } from '$lib/utils/money';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 
 	const monthlyBudget = 1200;
 	const totalSpent = 350;
 	const remainingBudget = monthlyBudget - totalSpent;
+
+	function formatCurrency(amount: number) {
+		return new Intl.NumberFormat('en-MY', {
+			style: 'currency',
+			currency: 'MYR'
+		}).format(amount);
+	}
 </script>
 
 <svelte:head>
@@ -14,45 +24,73 @@
 	/>
 </svelte:head>
 
-<main class="min-h-screen bg-slate-950 px-6 py-10 text-white">
-	<section class="mx-auto max-w-5xl space-y-8">
-		<div>
-			<p class="text-sm font-medium uppercase tracking-wide text-emerald-400">SpendWise</p>
-			<h1 class="mt-2 text-4xl font-bold tracking-tight">Budget smarter. Spend clearer.</h1>
-			<p class="mt-3 max-w-2xl text-slate-300">
-				A local-first budgeting and expense tracking app for desktop and Android.
-			</p>
-		</div>
+<main class="min-h-screen bg-background px-6 py-10 text-foreground">
+	<section class="mx-auto max-w-6xl space-y-8">
+		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+			<div>
+				<div class="flex items-center gap-3">
+					<h1 class="text-4xl font-bold tracking-tight">SpendWise</h1>
+					<Badge variant="secondary">Local-first</Badge>
+				</div>
 
-		<div class="grid gap-4 md:grid-cols-3">
-			<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow">
-				<p class="text-sm text-slate-400">Monthly Budget</p>
-				<p class="mt-2 text-3xl font-semibold">{formatCurrency(monthlyBudget)}</p>
-			</div>
-
-			<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow">
-				<p class="text-sm text-slate-400">Total Spent</p>
-				<p class="mt-2 text-3xl font-semibold">{formatCurrency(totalSpent)}</p>
-			</div>
-
-			<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow">
-				<p class="text-sm text-slate-400">Remaining</p>
-				<p class="mt-2 text-3xl font-semibold text-emerald-400">
-					{formatCurrency(remainingBudget)}
+				<p class="mt-3 max-w-2xl text-muted-foreground">
+					A budgeting and expense tracking app for desktop and Android.
 				</p>
 			</div>
+
+			<Button>Add Transaction</Button>
 		</div>
 
-		<div class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-			<h2 class="text-xl font-semibold">Current build status</h2>
+		<Separator />
 
-			<ul class="mt-4 space-y-2 text-slate-300">
-				<li>✅ SvelteKit initialized</li>
-				<li>✅ TypeScript enabled</li>
-				<li>✅ Tailwind CSS configured</li>
-				<li>✅ Core project folders created</li>
-				<li>✅ Finance types added</li>
-			</ul>
+		<div class="grid gap-4 md:grid-cols-3">
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Monthly Budget</Card.Title>
+					<Card.Description>Your planned spending limit</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<p class="text-3xl font-bold">{formatCurrency(monthlyBudget)}</p>
+				</Card.Content>
+			</Card.Root>
+
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Total Spent</Card.Title>
+					<Card.Description>Expenses recorded this month</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<p class="text-3xl font-bold">{formatCurrency(totalSpent)}</p>
+				</Card.Content>
+			</Card.Root>
+
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Remaining</Card.Title>
+					<Card.Description>Available balance for the month</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<p class="text-3xl font-bold text-emerald-500">
+						{formatCurrency(remainingBudget)}
+					</p>
+				</Card.Content>
+			</Card.Root>
 		</div>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Milestone Progress</Card.Title>
+				<Card.Description>Project Initialization & Core Architecture</Card.Description>
+			</Card.Header>
+
+			<Card.Content>
+				<ul class="space-y-2 text-sm text-muted-foreground">
+					<li>✅ Issue 1.1: SvelteKit + TypeScript initialized</li>
+					<li>✅ Issue 1.2: shadcn-svelte UI framework configured</li>
+					<li>⬜ Issue 1.3: Tauri 2 desktop/mobile setup</li>
+					<li>⬜ Issue 1.4: Tauri SQL plugin + SQLite setup</li>
+				</ul>
+			</Card.Content>
+		</Card.Root>
 	</section>
 </main>
