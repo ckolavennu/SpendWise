@@ -1,4 +1,4 @@
-export type AppRoute = '/' | '/login' | '/transactions';
+export type AppRoute = '/' | '/transactions' | '/budget';
 
 export interface NavigationItem {
 	label: string;
@@ -13,5 +13,9 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 	{
 		label: 'Transactions',
 		href: '/transactions'
+	},
+	{
+		label: 'Budget',
+		href: '/budget'
 	}
 ];

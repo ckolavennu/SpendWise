@@ -85,7 +85,7 @@
 	</div>
 
 	<nav class="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden">
-		<div class="grid h-16 grid-cols-2">
+		<div class="grid h-16 grid-cols-3">
 			{#each NAVIGATION_ITEMS as item (item.href)}
 				<a
 					href={resolve(item.href)}

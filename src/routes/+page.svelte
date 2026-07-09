@@ -11,9 +11,10 @@
 	import { subscribeToTransactions } from '$lib/services/transactions';
 	import { currentUser } from '$lib/stores/auth';
 	import type { Transaction } from '$lib/types/finance';
+	import { subscribeToBudgetSettings } from '$lib/services/budget';
 
 	let transactions = $state<Transaction[]>([]);
-	const monthlyBudget = 1200;
+	let monthlyBudget = $state(1200);
 
 	$effect(() => {
 		const userId = $currentUser?.uid;
@@ -25,6 +26,23 @@
 
 		const unsubscribe = subscribeToTransactions(userId, (items) => {
 			transactions = items;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
+	$effect(() => {
+		const userId = $currentUser?.uid;
+
+		if (!userId) {
+			monthlyBudget = 1200;
+			return;
+		}
+
+		const unsubscribe = subscribeToBudgetSettings(userId, (settings) => {
+			monthlyBudget = settings.monthlyBudget;
 		});
 
 		return () => {
