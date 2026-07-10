@@ -1,13 +1,12 @@
 <script lang="ts">
+	import CategoryBreakdownChart from '$lib/components/charts/category-breakdown-chart.svelte';
+	import { calculateExpenseCategoryBreakdown } from '$lib/utils/category-breakdown';
 	import { resolve } from '$app/paths';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import {
-		calculateDashboardMetrics,
-		formatCurrency
-	} from '$lib/utils/dashboard';
+	import { calculateDashboardMetrics, formatCurrency } from '$lib/utils/dashboard';
 	import { subscribeToTransactions } from '$lib/services/transactions';
 	import { currentUser } from '$lib/stores/auth';
 	import type { Transaction } from '$lib/types/finance';
@@ -52,6 +51,7 @@
 
 	const metrics = $derived(calculateDashboardMetrics(transactions, monthlyBudget));
 	const recentTransactions = $derived(transactions.slice(0, 5));
+	const categoryBreakdown = $derived(calculateExpenseCategoryBreakdown(transactions));
 
 	function getBudgetHealthVariant(status: string) {
 		if (status === 'Healthy') return 'default';
@@ -172,7 +172,7 @@
 				</Card.Root>
 			</div>
 
-			<div class="grid gap-6 lg:grid-cols-[1fr_420px]">
+			<div class="grid gap-6 lg:grid-cols-2">
 				<Card.Root>
 					<Card.Header>
 						<Card.Title>Monthly Overview</Card.Title>
@@ -211,6 +211,21 @@
 								></div>
 							</div>
 						</div>
+					</Card.Content>
+				</Card.Root>
+
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Expense Breakdown</Card.Title>
+						<Card.Description>Spending by category across all expenses.</Card.Description>
+					</Card.Header>
+
+					<Card.Content>
+						{#if categoryBreakdown.length === 0}
+							<p class="text-sm text-muted-foreground">No expense data yet.</p>
+						{:else}
+							<CategoryBreakdownChart data={categoryBreakdown} />
+						{/if}
 					</Card.Content>
 				</Card.Root>
 

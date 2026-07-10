@@ -1,11 +1,6 @@
 export type TransactionType = 'income' | 'expense';
 
-export type PaymentMethod =
-	| 'cash'
-	| 'card'
-	| 'bank_transfer'
-	| 'e_wallet'
-	| 'other';
+export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'e_wallet' | 'other';
 
 export type BudgetHealthStatus = 'healthy' | 'warning' | 'overspending';
 
@@ -30,7 +25,6 @@ export interface Transaction {
 	createdAt: string;
 	updatedAt: string;
 }
-
 
 export interface MonthlyBudget {
 	id: string;

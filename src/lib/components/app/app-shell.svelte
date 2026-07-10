@@ -56,9 +56,7 @@
 						{$currentUser.email}
 					</p>
 
-					<Button variant="secondary" size="sm" onclick={handleLogout}>
-						Logout
-					</Button>
+					<Button variant="secondary" size="sm" onclick={handleLogout}>Logout</Button>
 				{:else}
 					<a href={resolve('/login')}>
 						<Button size="sm">Login</Button>
@@ -68,9 +66,7 @@
 
 			<div class="md:hidden">
 				{#if $currentUser}
-					<Button variant="secondary" size="sm" onclick={handleLogout}>
-						Logout
-					</Button>
+					<Button variant="secondary" size="sm" onclick={handleLogout}>Logout</Button>
 				{:else}
 					<a href={resolve('/login')}>
 						<Button size="sm">Login</Button>

@@ -6,10 +6,10 @@
 	import { loginWithEmail, logoutUser, registerWithEmail } from '$lib/services/auth';
 	import { currentUser } from '$lib/stores/auth';
 
-	let email = '';
-	let password = '';
-	let message = '';
-	let loading = false;
+	let email = $state('');
+	let password = $state('');
+	let message = $state('');
+	let loading = $state(false);
 
 	async function handleRegister() {
 		loading = true;
@@ -72,14 +72,17 @@
 
 				<div class="space-y-2">
 					<Label for="password">Password</Label>
-					<Input id="password" type="password" bind:value={password} placeholder="Minimum 6 characters" />
+					<Input
+						id="password"
+						type="password"
+						bind:value={password}
+						placeholder="Minimum 6 characters"
+					/>
 				</div>
 
 				<div class="grid gap-3 sm:grid-cols-2">
 					<Button disabled={loading} onclick={handleLogin}>Login</Button>
-					<Button disabled={loading} variant="secondary" onclick={handleRegister}>
-						Register
-					</Button>
+					<Button disabled={loading} variant="secondary" onclick={handleRegister}>Register</Button>
 				</div>
 			{/if}
 
