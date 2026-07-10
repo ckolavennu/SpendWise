@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { subscribeToCategories } from '$lib/services/categories';
 	import {
 		createTransaction,
 		deleteTransaction,
@@ -11,18 +13,9 @@
 		updateTransaction
 	} from '$lib/services/transactions';
 	import { currentUser } from '$lib/stores/auth';
+	import type { Category } from '$lib/types/category';
+	import { getAvailableCategories, getMergedCategories } from '$lib/types/category';
 	import type { PaymentMethod, Transaction, TransactionType } from '$lib/types/finance';
-
-	const categories = [
-		'Food',
-		'Transport',
-		'Shopping',
-		'Entertainment',
-		'Subscriptions',
-		'Salary',
-		'Allowance',
-		'Other'
-	];
 
 	const paymentMethods: { value: PaymentMethod; label: string }[] = [
 		{ value: 'cash', label: 'Cash' },
@@ -40,6 +33,7 @@
 	let transactionDate = $state(new Date().toISOString().slice(0, 10));
 
 	let transactions = $state<Transaction[]>([]);
+	let customCategories = $state<Category[]>([]);
 	let message = $state('');
 	let saving = $state(false);
 	let editingTransactionId = $state<string | null>(null);
@@ -65,9 +59,38 @@
 		};
 	});
 
+	$effect(() => {
+		const userId = $currentUser?.uid;
+
+		if (!userId) {
+			customCategories = [];
+			return;
+		}
+
+		const unsubscribe = subscribeToCategories(userId, (items) => {
+			customCategories = items;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
+	const categoryOptions = $derived(getAvailableCategories(customCategories, type));
+	const filterCategoryOptions = $derived(getMergedCategories(customCategories));
+
+	$effect(() => {
+		const categoryStillAvailable = categoryOptions.some((option) => option.name === category);
+
+		if (!categoryStillAvailable) {
+			category = categoryOptions[0]?.name ?? 'Other';
+		}
+	});
+
 	const filteredTransactions = $derived(
 		transactions.filter((transaction) => {
-			const searchText = `${transaction.category} ${transaction.note} ${transaction.paymentMethod} ${transaction.transactionDate}`.toLowerCase();
+			const searchText =
+				`${transaction.category} ${transaction.note} ${transaction.paymentMethod} ${transaction.transactionDate}`.toLowerCase();
 			const matchesSearch = searchText.includes(searchQuery.toLowerCase().trim());
 			const matchesType = typeFilter === 'all' || transaction.type === typeFilter;
 			const matchesCategory = categoryFilter === 'all' || transaction.category === categoryFilter;
@@ -100,7 +123,7 @@
 	function resetForm() {
 		type = 'expense';
 		amount = '';
-		category = 'Food';
+		category = categoryOptions[0]?.name ?? 'Food';
 		paymentMethod = 'e_wallet';
 		note = '';
 		transactionDate = new Date().toISOString().slice(0, 10);
@@ -196,9 +219,9 @@
 				<p class="text-muted-foreground">Add, edit, filter, and manage your financial records.</p>
 			</div>
 
-			<a href={resolve('/')}>
-				<Button variant="secondary">Back to Dashboard</Button>
-			</a>
+			<div class="flex flex-wrap gap-3">
+				<Button variant="secondary" onclick={() => goto(resolve('/categories'))}>Manage Categories</Button>
+				<Button variant="secondary" onclick={() => goto(resolve('/'))}>Back to Dashboard</Button>			</div>
 		</div>
 
 		{#if !$currentUser}
@@ -209,9 +232,7 @@
 				</Card.Header>
 
 				<Card.Content>
-					<a href={resolve('/login')}>
-						<Button>Go to Login</Button>
-					</a>
+					<Button onclick={() => goto(resolve('/login'))}>Go to Login</Button>
 				</Card.Content>
 			</Card.Root>
 		{:else}
@@ -292,8 +313,8 @@
 									bind:value={category}
 									class="w-full rounded-md border bg-background px-3 py-2 text-sm"
 								>
-									{#each categories as categoryOption (categoryOption)}
-										<option value={categoryOption}>{categoryOption}</option>
+									{#each categoryOptions as categoryOption (categoryOption.id)}
+										<option value={categoryOption.name}>{categoryOption.name}</option>
 									{/each}
 								</select>
 							</div>
@@ -383,8 +404,8 @@
 										class="w-full rounded-md border bg-background px-3 py-2 text-sm"
 									>
 										<option value="all">All</option>
-										{#each categories as categoryOption (categoryOption)}
-											<option value={categoryOption}>{categoryOption}</option>
+										{#each filterCategoryOptions as categoryOption (categoryOption.id)}
+											<option value={categoryOption.name}>{categoryOption.name}</option>
 										{/each}
 									</select>
 								</div>
