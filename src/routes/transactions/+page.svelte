@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -91,6 +91,7 @@
 		transactions.filter((transaction) => {
 			const searchText =
 				`${transaction.category} ${transaction.note} ${transaction.paymentMethod} ${transaction.transactionDate}`.toLowerCase();
+
 			const matchesSearch = searchText.includes(searchQuery.toLowerCase().trim());
 			const matchesType = typeFilter === 'all' || transaction.type === typeFilter;
 			const matchesCategory = categoryFilter === 'all' || transaction.category === categoryFilter;
@@ -118,6 +119,24 @@
 			style: 'currency',
 			currency: 'MYR'
 		}).format(value);
+	}
+
+	function formatDate(dateValue: string) {
+		const date = new Date(`${dateValue}T00:00:00`);
+
+		if (Number.isNaN(date.getTime())) {
+			return dateValue;
+		}
+
+		return new Intl.DateTimeFormat('en-MY', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric'
+		}).format(date);
+	}
+
+	function formatPaymentMethod(value: PaymentMethod) {
+		return value.replace(/_/g, ' ');
 	}
 
 	function resetForm() {
@@ -211,99 +230,164 @@
 	<title>Transactions | SpendWise</title>
 </svelte:head>
 
-<main class="min-h-screen bg-background px-6 py-10 text-foreground">
-	<section class="mx-auto max-w-6xl space-y-8">
-		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-			<div>
-				<h1 class="text-3xl font-bold tracking-tight">Transactions</h1>
-				<p class="text-muted-foreground">Add, edit, filter, and manage your financial records.</p>
-			</div>
+<main class="min-h-screen px-4 py-8 text-foreground sm:px-6 lg:px-8">
+	<section class="mx-auto max-w-7xl space-y-8">
+		<div
+			class="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-500/10 via-card/70 to-emerald-500/10 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8"
+		>
+			<div class="absolute right-0 top-0 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl"></div>
 
-			<div class="flex flex-wrap gap-3">
-				<Button variant="secondary" onclick={() => goto(resolve('/categories'))}>Manage Categories</Button>
-				<Button variant="secondary" onclick={() => goto(resolve('/'))}>Back to Dashboard</Button>			</div>
+			<div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+				<div class="space-y-3">
+					<Badge class="border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
+						Transaction Control
+					</Badge>
+
+					<div>
+						<h1 class="text-4xl font-black tracking-tight sm:text-5xl">Transactions</h1>
+						<p class="mt-3 max-w-2xl text-muted-foreground">
+							Add, edit, filter, and manage every income or expense record from one clean
+							workspace.
+						</p>
+					</div>
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<a
+						href={resolve('/categories')}
+						class="inline-flex h-9 items-center justify-center rounded-md bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
+					>
+						Manage Categories
+					</a>
+
+					<a
+						href={resolve('/')}
+						class="inline-flex h-9 items-center justify-center rounded-md border border-white/10 bg-background/50 px-4 text-sm font-medium transition hover:bg-muted"
+					>
+						Dashboard
+					</a>
+				</div>
+			</div>
 		</div>
 
 		{#if !$currentUser}
-			<Card.Root>
+			<Card.Root class="border-white/10 bg-card/80 shadow-xl backdrop-blur">
 				<Card.Header>
 					<Card.Title>Please log in first</Card.Title>
 					<Card.Description>You need an account before adding transactions.</Card.Description>
 				</Card.Header>
 
 				<Card.Content>
-					<Button onclick={() => goto(resolve('/login'))}>Go to Login</Button>
+					<a
+						href={resolve('/login')}
+						class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/80"
+					>
+						Go to Login
+					</a>
 				</Card.Content>
 			</Card.Root>
 		{:else}
 			<div class="grid gap-4 md:grid-cols-3">
-				<Card.Root>
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 					<Card.Header>
-						<Card.Title>Filtered Income</Card.Title>
-						<Card.Description>Income in current view</Card.Description>
+						<Card.Title class="text-sm text-muted-foreground">Filtered Income</Card.Title>
 					</Card.Header>
 					<Card.Content>
-						<p class="text-3xl font-bold text-emerald-500">{formatCurrency(totalIncome)}</p>
+						<p class="text-3xl font-black text-emerald-400">{formatCurrency(totalIncome)}</p>
+						<p class="mt-2 text-sm text-muted-foreground">Income in current view</p>
 					</Card.Content>
 				</Card.Root>
 
-				<Card.Root>
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 					<Card.Header>
-						<Card.Title>Filtered Expenses</Card.Title>
-						<Card.Description>Expenses in current view</Card.Description>
+						<Card.Title class="text-sm text-muted-foreground">Filtered Expenses</Card.Title>
 					</Card.Header>
 					<Card.Content>
-						<p class="text-3xl font-bold text-red-500">{formatCurrency(totalExpenses)}</p>
+						<p class="text-3xl font-black text-red-400">{formatCurrency(totalExpenses)}</p>
+						<p class="mt-2 text-sm text-muted-foreground">Expenses in current view</p>
 					</Card.Content>
 				</Card.Root>
 
-				<Card.Root>
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 					<Card.Header>
-						<Card.Title>Net Amount</Card.Title>
-						<Card.Description>Income minus expenses</Card.Description>
+						<Card.Title class="text-sm text-muted-foreground">Net Amount</Card.Title>
 					</Card.Header>
 					<Card.Content>
 						<p
 							class={netAmount >= 0
-								? 'text-3xl font-bold text-emerald-500'
-								: 'text-3xl font-bold text-red-500'}
+								? 'text-3xl font-black text-emerald-400'
+								: 'text-3xl font-black text-red-400'}
 						>
 							{formatCurrency(netAmount)}
 						</p>
+						<p class="mt-2 text-sm text-muted-foreground">Income minus expenses</p>
 					</Card.Content>
 				</Card.Root>
 			</div>
 
-			<div class="grid gap-6 lg:grid-cols-[420px_1fr]">
-				<Card.Root>
+			<div class="grid gap-6 xl:grid-cols-[430px_1fr]">
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 					<Card.Header>
-						<Card.Title>
-							{editingTransactionId ? 'Edit Transaction' : 'Add Transaction'}
-						</Card.Title>
-						<Card.Description>
-							{editingTransactionId
-								? 'Update the selected transaction record.'
-								: 'Save a new income or expense record.'}
-						</Card.Description>
+						<div class="flex items-center justify-between gap-4">
+							<div>
+								<Card.Title>
+									{editingTransactionId ? 'Edit Transaction' : 'Add Transaction'}
+								</Card.Title>
+								<Card.Description>
+									{editingTransactionId
+										? 'Update the selected record.'
+										: 'Save a new income or expense.'}
+								</Card.Description>
+							</div>
+
+							{#if editingTransactionId}
+								<Badge class="border border-amber-500/30 bg-amber-500/10 text-amber-300">
+									Editing
+								</Badge>
+							{/if}
+						</div>
 					</Card.Header>
 
 					<Card.Content>
 						<form class="space-y-4" onsubmit={handleSubmit}>
-							<div class="space-y-2">
-								<Label for="type">Type</Label>
-								<select
-									id="type"
-									bind:value={type}
-									class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+							<div class="grid grid-cols-2 gap-3">
+								<button
+									type="button"
+									class={type === 'expense'
+										? 'rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-left'
+										: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
+									onclick={() => {
+										type = 'expense';
+									}}
 								>
-									<option value="expense">Expense</option>
-									<option value="income">Income</option>
-								</select>
+									<p class="text-sm font-semibold">Expense</p>
+									<p class="mt-1 text-xs text-muted-foreground">Money going out</p>
+								</button>
+
+								<button
+									type="button"
+									class={type === 'income'
+										? 'rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-left'
+										: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
+									onclick={() => {
+										type = 'income';
+									}}
+								>
+									<p class="text-sm font-semibold">Income</p>
+									<p class="mt-1 text-xs text-muted-foreground">Money coming in</p>
+								</button>
 							</div>
 
 							<div class="space-y-2">
 								<Label for="amount">Amount</Label>
-								<Input id="amount" type="number" step="0.01" min="0" bind:value={amount} />
+								<Input
+									id="amount"
+									type="number"
+									step="0.01"
+									min="0"
+									bind:value={amount}
+									placeholder="0.00"
+								/>
 							</div>
 
 							<div class="space-y-2">
@@ -311,7 +395,7 @@
 								<select
 									id="category"
 									bind:value={category}
-									class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+									class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
 								>
 									{#each categoryOptions as categoryOption (categoryOption.id)}
 										<option value={categoryOption.name}>{categoryOption.name}</option>
@@ -324,7 +408,7 @@
 								<select
 									id="paymentMethod"
 									bind:value={paymentMethod}
-									class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+									class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
 								>
 									{#each paymentMethods as method (method.value)}
 										<option value={method.value}>{method.label}</option>
@@ -359,27 +443,29 @@
 							</div>
 
 							{#if message}
-								<p class="text-sm text-muted-foreground">{message}</p>
+								<div class="rounded-xl border border-white/10 bg-background/50 px-4 py-3 text-sm text-muted-foreground">
+									{message}
+								</div>
 							{/if}
 						</form>
 					</Card.Content>
 				</Card.Root>
 
 				<div class="space-y-6">
-					<Card.Root>
+					<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 						<Card.Header>
 							<Card.Title>Filters</Card.Title>
 							<Card.Description>Search and narrow down your records.</Card.Description>
 						</Card.Header>
 
 						<Card.Content>
-							<div class="grid gap-4 md:grid-cols-[1fr_160px_180px_auto] md:items-end">
+							<div class="grid gap-4 lg:grid-cols-[1fr_160px_180px_auto] lg:items-end">
 								<div class="space-y-2">
 									<Label for="search">Search</Label>
 									<Input
 										id="search"
 										bind:value={searchQuery}
-										placeholder="Search category, note, date..."
+										placeholder="Search category, note, method, date..."
 									/>
 								</div>
 
@@ -388,7 +474,7 @@
 									<select
 										id="typeFilter"
 										bind:value={typeFilter}
-										class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+										class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
 									>
 										<option value="all">All</option>
 										<option value="income">Income</option>
@@ -401,7 +487,7 @@
 									<select
 										id="categoryFilter"
 										bind:value={categoryFilter}
-										class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+										class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
 									>
 										<option value="all">All</option>
 										{#each filterCategoryOptions as categoryOption (categoryOption.id)}
@@ -417,20 +503,28 @@
 						</Card.Content>
 					</Card.Root>
 
-					<Card.Root>
+					<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 						<Card.Header>
-							<Card.Title>Transaction List</Card.Title>
-							<Card.Description>
-								Showing {filteredTransactions.length} of {transactions.length} records.
-							</Card.Description>
+							<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+								<div>
+									<Card.Title>Transaction List</Card.Title>
+									<Card.Description>
+										Showing {filteredTransactions.length} of {transactions.length} records.
+									</Card.Description>
+								</div>
+
+								<Badge variant="secondary">
+									{filteredTransactions.length} shown
+								</Badge>
+							</div>
 						</Card.Header>
 
 						<Card.Content>
 							{#if filteredTransactions.length === 0}
-								<div class="rounded-xl border border-dashed p-8 text-center">
-									<p class="font-medium">No transactions found</p>
-									<p class="mt-1 text-sm text-muted-foreground">
-										Try clearing your filters or adding a new transaction.
+								<div class="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+									<p class="font-semibold">No transactions found</p>
+									<p class="mt-2 text-sm text-muted-foreground">
+										Try clearing filters or adding a new transaction.
 									</p>
 								</div>
 							{:else}
@@ -438,36 +532,38 @@
 									{#each filteredTransactions as transaction (transaction.id)}
 										<div
 											class={editingTransactionId === transaction.id
-												? 'rounded-xl border border-primary bg-muted/40 p-4'
-												: 'rounded-xl border bg-card p-4'}
+												? 'rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-lg'
+												: 'rounded-2xl border border-white/10 bg-background/50 p-4 transition hover:bg-muted/30'}
 										>
-											<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-												<div class="space-y-1">
+											<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+												<div class="space-y-2">
 													<div class="flex flex-wrap items-center gap-2">
-														<p class="font-semibold">{transaction.category}</p>
+														<p class="text-lg font-bold">{transaction.category}</p>
 
 														<span
 															class={transaction.type === 'income'
-																? 'rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-500'
-																: 'rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500'}
+																? 'rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400'
+																: 'rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-400'}
 														>
 															{transaction.type}
 														</span>
 													</div>
 
 													<p class="text-sm text-muted-foreground">
-														{transaction.transactionDate} · {transaction.paymentMethod}
+														{formatDate(transaction.transactionDate)} · {formatPaymentMethod(
+															transaction.paymentMethod
+														)}
 														{#if transaction.note}
 															· {transaction.note}
 														{/if}
 													</p>
 												</div>
 
-												<div class="flex flex-wrap items-center gap-3 md:justify-end">
+												<div class="flex flex-wrap items-center gap-3 lg:justify-end">
 													<p
 														class={transaction.type === 'income'
-															? 'font-semibold text-emerald-500'
-															: 'font-semibold text-red-500'}
+															? 'text-xl font-black text-emerald-400'
+															: 'text-xl font-black text-red-400'}
 													>
 														{transaction.type === 'income' ? '+' : '-'}
 														{formatCurrency(transaction.amount)}
