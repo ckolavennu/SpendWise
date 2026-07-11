@@ -14,34 +14,25 @@
 		await logoutUser();
 	}
 
-	async function navigateTo(route: AppRoute | '/login' | '/admin') {
+	async function navigateTo(route: AppRoute | '/login') {
 		switch (route) {
 			case '/':
 				await goto(resolve('/'));
 				break;
-
 			case '/transactions':
 				await goto(resolve('/transactions'));
 				break;
-
 			case '/budget':
 				await goto(resolve('/budget'));
 				break;
-
 			case '/reports':
 				await goto(resolve('/reports'));
 				break;
-
 			case '/categories':
 				await goto(resolve('/categories'));
 				break;
-
 			case '/login':
 				await goto(resolve('/login'));
-				break;
-
-			case '/admin':
-				await goto(resolve('/admin'));
 				break;
 		}
 	}
@@ -60,11 +51,9 @@
 		<div
 			class="absolute left-1/2 top-[-10rem] h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl"
 		></div>
-
 		<div
 			class="absolute right-[-8rem] top-40 h-[24rem] w-[24rem] rounded-full bg-blue-500/10 blur-3xl"
 		></div>
-
 		<div
 			class="absolute bottom-[-10rem] left-[-8rem] h-[26rem] w-[26rem] rounded-full bg-cyan-500/10 blur-3xl"
 		></div>
@@ -81,7 +70,9 @@
 
 				<div class="hidden text-left leading-tight sm:block">
 					<p class="font-semibold tracking-tight">SpendWise</p>
-					<p class="text-xs text-muted-foreground">Smart budget tracker</p>
+					<p class="text-xs text-muted-foreground">
+						{$isSuperAdmin ? 'Superadmin console' : 'Smart budget tracker'}
+					</p>
 				</div>
 			</button>
 
@@ -103,17 +94,17 @@
 
 			<div class="hidden items-center gap-3 md:flex">
 				{#if $currentUser}
+					{#if $isSuperAdmin}
+						<Button variant="secondary" size="sm" onclick={() => navigateTo('/')}>
+							Superadmin
+						</Button>
+					{/if}
+
 					<div class="max-w-48 rounded-full border border-white/10 bg-card/60 px-3 py-1.5">
 						<p class="truncate text-xs text-muted-foreground">
 							{$currentUser.email}
 						</p>
 					</div>
-
-					{#if $isSuperAdmin}
-						<Button variant="secondary" size="sm" onclick={() => navigateTo('/admin')}>
-							Admin
-						</Button>
-					{/if}
 
 					<Button variant="secondary" size="sm" onclick={handleLogout}>Logout</Button>
 				{:else}
@@ -125,7 +116,7 @@
 				{#if $currentUser}
 					<div class="flex items-center gap-2">
 						{#if $isSuperAdmin}
-							<Button variant="secondary" size="sm" onclick={() => navigateTo('/admin')}>
+							<Button variant="secondary" size="sm" onclick={() => navigateTo('/')}>
 								Admin
 							</Button>
 						{/if}

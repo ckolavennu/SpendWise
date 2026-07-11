@@ -1,7 +1,13 @@
 import { db } from '$lib/firebase/client';
 import type { PaymentMethod, Transaction, TransactionType } from '$lib/types/finance';
 import type { UserProfile, UserRole } from '$lib/types/user';
-import { collectionGroup, onSnapshot, type Unsubscribe } from 'firebase/firestore';
+import {
+	collectionGroup,
+	doc,
+	onSnapshot,
+	updateDoc,
+	type Unsubscribe
+} from 'firebase/firestore';
 
 export interface AdminTransaction extends Transaction {
 	userId: string;
@@ -77,6 +83,13 @@ export function subscribeToAllTransactions(
 			} satisfies AdminTransaction;
 		});
 
-		callback(transactions.sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)));
+		callback(transactions.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+	});
+}
+
+export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
+	await updateDoc(doc(requireDb(), 'users', userId, 'profile', 'main'), {
+		role,
+		updatedAt: new Date().toISOString()
 	});
 }
