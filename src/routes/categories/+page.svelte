@@ -1,7 +1,6 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { resolve } from '$app/paths';
-    import { Badge } from '$lib/components/ui/badge/index.js';
+	import { resolve } from '$app/paths';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -39,6 +38,12 @@
 	});
 
 	const mergedCategories = $derived(getMergedCategories(customCategories));
+	const expenseCategories = $derived(
+		mergedCategories.filter((category) => category.type === 'expense' || category.type === 'both')
+	);
+	const incomeCategories = $derived(
+		mergedCategories.filter((category) => category.type === 'income' || category.type === 'both')
+	);
 
 	function normalizeName(value: string): string {
 		return value.trim().toLowerCase();
@@ -50,6 +55,18 @@
 		}
 
 		return type === 'income' ? 'Income' : 'Expense';
+	}
+
+	function getTypeBadgeClass(type: CategoryType): string {
+		if (type === 'income') {
+			return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+		}
+
+		if (type === 'expense') {
+			return 'border-red-500/30 bg-red-500/10 text-red-300';
+		}
+
+		return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300';
 	}
 
 	async function handleCreateCategory(event: SubmitEvent) {
@@ -117,36 +134,104 @@
 	<title>Categories | SpendWise</title>
 </svelte:head>
 
-<main class="min-h-screen bg-background px-6 py-10 text-foreground">
-	<section class="mx-auto max-w-6xl space-y-8">
-		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-			<div>
-				<h1 class="text-3xl font-bold tracking-tight">Categories</h1>
-				<p class="mt-2 text-muted-foreground">
-					Create custom income and expense categories for better tracking.
-				</p>
-			</div>
+<main class="min-h-screen px-4 py-8 text-foreground sm:px-6 lg:px-8">
+	<section class="mx-auto max-w-7xl space-y-8">
+		<div
+			class="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-purple-500/10 via-card/70 to-emerald-500/10 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8"
+		>
+			<div class="absolute right-[-4rem] top-[-4rem] h-72 w-72 rounded-full bg-purple-400/10 blur-3xl"></div>
+			<div class="absolute bottom-[-5rem] left-1/3 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl"></div>
 
-			<Button variant="secondary" onclick={() => goto(resolve('/transactions'))}>Back to Transactions</Button>
+			<div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+				<div class="space-y-4">
+					<div class="flex flex-wrap items-center gap-3">
+						<Badge class="border border-purple-500/30 bg-purple-500/10 text-purple-300">
+							Category Studio
+						</Badge>
+
+						<Badge variant="secondary">
+							{mergedCategories.length} total categories
+						</Badge>
+					</div>
+
+					<div>
+						<h1 class="text-4xl font-black tracking-tight sm:text-5xl">
+							Organize spending your way.
+						</h1>
+
+						<p class="mt-3 max-w-2xl text-muted-foreground">
+							Create custom income and expense categories so your transactions match how you
+							actually spend.
+						</p>
+					</div>
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<a href={resolve('/transactions')}>
+						<Button>Add Transaction</Button>
+					</a>
+
+					<a href={resolve('/')}>
+						<Button variant="secondary">Dashboard</Button>
+					</a>
+				</div>
+			</div>
 		</div>
 
 		{#if !$currentUser}
-			<Card.Root>
+			<Card.Root class="border-white/10 bg-card/80 shadow-xl backdrop-blur">
 				<Card.Header>
 					<Card.Title>Please log in first</Card.Title>
 					<Card.Description>You need an account before managing categories.</Card.Description>
 				</Card.Header>
 
 				<Card.Content>
-					<Button onclick={() => goto(resolve('/login'))}>Go to Login</Button>
+					<a href={resolve('/login')}>
+						<Button>Go to Login</Button>
+					</a>
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			<div class="grid gap-6 lg:grid-cols-[420px_1fr]">
-				<Card.Root>
+			<div class="grid gap-4 md:grid-cols-3">
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
+					<Card.Header>
+						<Card.Title class="text-sm text-muted-foreground">Custom Categories</Card.Title>
+					</Card.Header>
+
+					<Card.Content>
+						<p class="text-4xl font-black">{customCategories.length}</p>
+						<p class="mt-2 text-sm text-muted-foreground">Created by you</p>
+					</Card.Content>
+				</Card.Root>
+
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
+					<Card.Header>
+						<Card.Title class="text-sm text-muted-foreground">Expense Categories</Card.Title>
+					</Card.Header>
+
+					<Card.Content>
+						<p class="text-4xl font-black text-red-400">{expenseCategories.length}</p>
+						<p class="mt-2 text-sm text-muted-foreground">Available for expenses</p>
+					</Card.Content>
+				</Card.Root>
+
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
+					<Card.Header>
+						<Card.Title class="text-sm text-muted-foreground">Income Categories</Card.Title>
+					</Card.Header>
+
+					<Card.Content>
+						<p class="text-4xl font-black text-emerald-400">{incomeCategories.length}</p>
+						<p class="mt-2 text-sm text-muted-foreground">Available for income</p>
+					</Card.Content>
+				</Card.Root>
+			</div>
+
+			<div class="grid gap-6 xl:grid-cols-[430px_1fr]">
+				<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 					<Card.Header>
 						<Card.Title>Create Category</Card.Title>
-						<Card.Description>Add your own custom category.</Card.Description>
+						<Card.Description>Add a new custom category to your account.</Card.Description>
 					</Card.Header>
 
 					<Card.Content>
@@ -156,7 +241,7 @@
 								<Input
 									id="categoryName"
 									bind:value={name}
-									placeholder="Example: Groceries, Rent, Freelance"
+									placeholder="Example: Rent, Groceries, Freelance"
 								/>
 							</div>
 
@@ -165,7 +250,7 @@
 								<select
 									id="categoryType"
 									bind:value={categoryType}
-									class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+									class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
 								>
 									<option value="expense">Expense</option>
 									<option value="income">Income</option>
@@ -173,49 +258,96 @@
 								</select>
 							</div>
 
+							<div class="grid grid-cols-3 gap-2">
+								<button
+									type="button"
+									class={categoryType === 'expense'
+										? 'rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm font-semibold text-red-300'
+										: 'rounded-2xl border border-white/10 bg-background/40 p-3 text-sm text-muted-foreground hover:bg-muted/50'}
+									onclick={() => {
+										categoryType = 'expense';
+									}}
+								>
+									Expense
+								</button>
+
+								<button
+									type="button"
+									class={categoryType === 'income'
+										? 'rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-300'
+										: 'rounded-2xl border border-white/10 bg-background/40 p-3 text-sm text-muted-foreground hover:bg-muted/50'}
+									onclick={() => {
+										categoryType = 'income';
+									}}
+								>
+									Income
+								</button>
+
+								<button
+									type="button"
+									class={categoryType === 'both'
+										? 'rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-3 text-sm font-semibold text-cyan-300'
+										: 'rounded-2xl border border-white/10 bg-background/40 p-3 text-sm text-muted-foreground hover:bg-muted/50'}
+									onclick={() => {
+										categoryType = 'both';
+									}}
+								>
+									Both
+								</button>
+							</div>
+
 							<Button class="w-full" type="submit" disabled={saving}>
 								{saving ? 'Saving...' : 'Create Category'}
 							</Button>
 
 							{#if message}
-								<p class="text-sm text-muted-foreground">{message}</p>
+								<div class="rounded-xl border border-white/10 bg-background/50 px-4 py-3 text-sm text-muted-foreground">
+									{message}
+								</div>
 							{/if}
 						</form>
 					</Card.Content>
 				</Card.Root>
 
 				<div class="space-y-6">
-					<Card.Root>
+					<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 						<Card.Header>
-							<Card.Title>Custom Categories</Card.Title>
-							<Card.Description>
-								You have {customCategories.length} custom categories.
-							</Card.Description>
+							<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+								<div>
+									<Card.Title>Custom Categories</Card.Title>
+									<Card.Description>
+										Manage the categories you created yourself.
+									</Card.Description>
+								</div>
+
+								<Badge variant="secondary">{customCategories.length} custom</Badge>
+							</div>
 						</Card.Header>
 
 						<Card.Content>
 							{#if customCategories.length === 0}
-								<div class="rounded-xl border border-dashed p-8 text-center">
-									<p class="font-medium">No custom categories yet</p>
-									<p class="mt-1 text-sm text-muted-foreground">
-										Create categories like Rent, Groceries, Grab, Coffee, or Freelance Income.
+								<div class="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+									<p class="font-semibold">No custom categories yet</p>
+									<p class="mt-2 text-sm text-muted-foreground">
+										Create categories like Rent, Coffee, Grab, University, or Freelance Income.
 									</p>
 								</div>
 							{:else}
-								<div class="space-y-3">
+								<div class="grid gap-3 md:grid-cols-2">
 									{#each customCategories as category (category.id)}
-										<div
-											class="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
-										>
-											<div>
-												<p class="font-semibold">{category.name}</p>
-												<p class="mt-1 text-sm text-muted-foreground">
-													{getTypeLabel(category.type)}
-												</p>
-											</div>
+										<div class="rounded-2xl border border-white/10 bg-background/50 p-4">
+											<div class="flex items-start justify-between gap-3">
+												<div>
+													<p class="text-lg font-bold">{category.name}</p>
 
-											<div class="flex items-center gap-3">
-												<Badge variant="secondary">{getTypeLabel(category.type)}</Badge>
+													<span
+														class={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getTypeBadgeClass(
+															category.type
+														)}`}
+													>
+														{getTypeLabel(category.type)}
+													</span>
+												</div>
 
 												<Button
 													variant="destructive"
@@ -232,19 +364,30 @@
 						</Card.Content>
 					</Card.Root>
 
-					<Card.Root>
+					<Card.Root class="border-white/10 bg-card/80 shadow-xl shadow-black/10 backdrop-blur">
 						<Card.Header>
 							<Card.Title>Default Categories</Card.Title>
-							<Card.Description>These are always available in SpendWise.</Card.Description>
+							<Card.Description>These categories are always available in SpendWise.</Card.Description>
 						</Card.Header>
 
 						<Card.Content>
-							<div class="grid gap-3 sm:grid-cols-2">
+							<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 								{#each DEFAULT_CATEGORIES as category (category.id)}
-									<div class="rounded-xl border bg-muted/30 p-4">
-										<div class="flex items-center justify-between gap-3">
-											<p class="font-medium">{category.name}</p>
-											<Badge variant="secondary">{getTypeLabel(category.type)}</Badge>
+									<div class="rounded-2xl border border-white/10 bg-background/50 p-4">
+										<div class="flex items-start justify-between gap-3">
+											<div>
+												<p class="font-bold">{category.name}</p>
+
+												<span
+													class={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getTypeBadgeClass(
+														category.type
+													)}`}
+												>
+													{getTypeLabel(category.type)}
+												</span>
+											</div>
+
+											<Badge variant="secondary">Default</Badge>
 										</div>
 									</div>
 								{/each}
