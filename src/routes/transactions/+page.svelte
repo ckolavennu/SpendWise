@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localDate, validateTransaction } from '$lib/validation/transaction';
 	import { resolve } from '$app/paths';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -30,7 +31,7 @@
 	let category = $state('Food');
 	let paymentMethod = $state<PaymentMethod>('e_wallet');
 	let note = $state('');
-	let transactionDate = $state(new Date().toISOString().slice(0, 10));
+	let transactionDate = $state(localDate());
 
 	let transactions = $state<Transaction[]>([]);
 	let customCategories = $state<Category[]>([]);
@@ -50,9 +51,16 @@
 			return;
 		}
 
-		const unsubscribe = subscribeToTransactions(userId, (items) => {
-			transactions = items;
-		});
+		transactions = [];
+		const unsubscribe = subscribeToTransactions(
+			userId,
+			(items) => {
+				transactions = items;
+			},
+			(error) => {
+				message = `Unable to load transactions: ${error.message}`;
+			}
+		);
 
 		return () => {
 			unsubscribe();
@@ -145,7 +153,7 @@
 		category = categoryOptions[0]?.name ?? 'Food';
 		paymentMethod = 'e_wallet';
 		note = '';
-		transactionDate = new Date().toISOString().slice(0, 10);
+		transactionDate = localDate();
 		editingTransactionId = null;
 		message = '';
 	}
@@ -163,16 +171,10 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
+		if (saving) return;
 
 		if (!$currentUser) {
 			message = 'Please log in first.';
-			return;
-		}
-
-		const amountValue = Number(amount);
-
-		if (!amount || Number.isNaN(amountValue) || amountValue <= 0) {
-			message = 'Please enter a valid amount.';
 			return;
 		}
 
@@ -180,15 +182,19 @@
 		message = '';
 
 		try {
-			const transactionInput = {
-				type,
-				amount: amountValue,
-				category,
-				paymentMethod,
-				note,
-				transactionDate
-			};
+			const transactionInput = validateTransaction(
+				{
+					type,
+					amount: Number(amount),
+					category,
+					paymentMethod,
+					note,
+					transactionDate
+				},
+				customCategories
+			);
 
+			const wasEditing = Boolean(editingTransactionId);
 			if (editingTransactionId) {
 				await updateTransaction($currentUser.uid, editingTransactionId, transactionInput);
 				message = 'Transaction updated.';
@@ -198,6 +204,7 @@
 			}
 
 			resetForm();
+			message = wasEditing ? 'Transaction updated.' : 'Transaction saved.';
 		} catch (error) {
 			message = error instanceof Error ? error.message : 'Failed to save transaction.';
 		} finally {
@@ -206,16 +213,21 @@
 	}
 
 	async function handleDelete(transactionId: string) {
-		if (!$currentUser) return;
+		if (!$currentUser || saving) return;
 
 		const confirmed = window.confirm('Delete this transaction? This cannot be undone.');
 
 		if (!confirmed) return;
 
-		await deleteTransaction($currentUser.uid, transactionId);
-
-		if (editingTransactionId === transactionId) {
-			resetForm();
+		saving = true;
+		try {
+			await deleteTransaction($currentUser.uid, transactionId);
+			if (editingTransactionId === transactionId) resetForm();
+			message = 'Transaction deleted.';
+		} catch (error) {
+			message = error instanceof Error ? error.message : 'Failed to delete transaction.';
+		} finally {
+			saving = false;
 		}
 	}
 
@@ -246,8 +258,7 @@
 					<div>
 						<h1 class="text-4xl font-black tracking-tight sm:text-5xl">Transactions</h1>
 						<p class="mt-3 max-w-2xl text-muted-foreground">
-							Add, edit, filter, and manage every income or expense record from one clean
-							workspace.
+							Add, edit, filter, and manage every income or expense record from one clean workspace.
 						</p>
 					</div>
 				</div>
@@ -350,103 +361,118 @@
 
 					<Card.Content>
 						<form class="space-y-4" onsubmit={handleSubmit}>
-							<div class="grid grid-cols-2 gap-3">
-								<button
-									type="button"
-									class={type === 'expense'
-										? 'rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-left'
-										: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
-									onclick={() => {
-										type = 'expense';
-									}}
-								>
-									<p class="text-sm font-semibold">Expense</p>
-									<p class="mt-1 text-xs text-muted-foreground">Money going out</p>
-								</button>
+							<fieldset disabled={saving} class="space-y-4">
+								<div class="grid grid-cols-2 gap-3">
+									<button
+										type="button"
+										class={type === 'expense'
+											? 'rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-left'
+											: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
+										onclick={() => {
+											type = 'expense';
+										}}
+									>
+										<p class="text-sm font-semibold">Expense</p>
+										<p class="mt-1 text-xs text-muted-foreground">Money going out</p>
+									</button>
 
-								<button
-									type="button"
-									class={type === 'income'
-										? 'rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-left'
-										: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
-									onclick={() => {
-										type = 'income';
-									}}
-								>
-									<p class="text-sm font-semibold">Income</p>
-									<p class="mt-1 text-xs text-muted-foreground">Money coming in</p>
-								</button>
-							</div>
-
-							<div class="space-y-2">
-								<Label for="amount">Amount</Label>
-								<Input
-									id="amount"
-									type="number"
-									step="0.01"
-									min="0"
-									bind:value={amount}
-									placeholder="0.00"
-								/>
-							</div>
-
-							<div class="space-y-2">
-								<Label for="category">Category</Label>
-								<select
-									id="category"
-									bind:value={category}
-									class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
-								>
-									{#each categoryOptions as categoryOption (categoryOption.id)}
-										<option value={categoryOption.name}>{categoryOption.name}</option>
-									{/each}
-								</select>
-							</div>
-
-							<div class="space-y-2">
-								<Label for="paymentMethod">Payment Method</Label>
-								<select
-									id="paymentMethod"
-									bind:value={paymentMethod}
-									class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
-								>
-									{#each paymentMethods as method (method.value)}
-										<option value={method.value}>{method.label}</option>
-									{/each}
-								</select>
-							</div>
-
-							<div class="space-y-2">
-								<Label for="transactionDate">Date</Label>
-								<Input id="transactionDate" type="date" bind:value={transactionDate} />
-							</div>
-
-							<div class="space-y-2">
-								<Label for="note">Note</Label>
-								<Input id="note" bind:value={note} placeholder="Example: Lunch, Grab, rent..." />
-							</div>
-
-							<div class="grid gap-3 sm:grid-cols-2">
-								<Button class="w-full" type="submit" disabled={saving}>
-									{#if saving}
-										Saving...
-									{:else if editingTransactionId}
-										Update
-									{:else}
-										Save
-									{/if}
-								</Button>
-
-								<Button class="w-full" type="button" variant="secondary" onclick={resetForm}>
-									Clear
-								</Button>
-							</div>
-
-							{#if message}
-								<div class="rounded-xl border border-white/10 bg-background/50 px-4 py-3 text-sm text-muted-foreground">
-									{message}
+									<button
+										type="button"
+										class={type === 'income'
+											? 'rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-left'
+											: 'rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-muted/50'}
+										onclick={() => {
+											type = 'income';
+										}}
+									>
+										<p class="text-sm font-semibold">Income</p>
+										<p class="mt-1 text-xs text-muted-foreground">Money coming in</p>
+									</button>
 								</div>
-							{/if}
+
+								<div class="space-y-2">
+									<Label for="amount">Amount</Label>
+									<Input
+										id="amount"
+										type="number"
+										step="0.01"
+										min="0.01"
+										required
+										bind:value={amount}
+										placeholder="0.00"
+									/>
+								</div>
+
+								<div class="space-y-2">
+									<Label for="category">Category</Label>
+									<select
+										id="category"
+										required
+										bind:value={category}
+										class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
+									>
+										{#each categoryOptions as categoryOption (categoryOption.id)}
+											<option value={categoryOption.name}>{categoryOption.name}</option>
+										{/each}
+									</select>
+								</div>
+
+								<div class="space-y-2">
+									<Label for="paymentMethod">Payment Method</Label>
+									<select
+										id="paymentMethod"
+										required
+										bind:value={paymentMethod}
+										class="w-full rounded-md border border-white/10 bg-background/60 px-3 py-2 text-sm"
+									>
+										{#each paymentMethods as method (method.value)}
+											<option value={method.value}>{method.label}</option>
+										{/each}
+									</select>
+								</div>
+
+								<div class="space-y-2">
+									<Label for="transactionDate">Date</Label>
+									<Input
+										id="transactionDate"
+										required
+										min="0001-01-01"
+										max="9999-12-31"
+										type="date"
+										bind:value={transactionDate}
+									/>
+								</div>
+
+								<div class="space-y-2">
+									<Label for="note">Note</Label>
+									<Input id="note" bind:value={note} placeholder="Example: Lunch, Grab, rent..." />
+								</div>
+
+								<div class="grid gap-3 sm:grid-cols-2">
+									<Button class="w-full" type="submit" disabled={saving}>
+										{#if saving}
+											Saving...
+										{:else if editingTransactionId}
+											Update
+										{:else}
+											Save
+										{/if}
+									</Button>
+
+									<Button class="w-full" type="button" variant="secondary" onclick={resetForm}>
+										Clear
+									</Button>
+								</div>
+
+								{#if message}
+									<div
+										role="status"
+										class="rounded-xl border border-white/10 bg-background/50 px-4 py-3 text-sm text-muted-foreground"
+									>
+										{message}
+									</div>
+								{/if}
+							</fieldset>
 						</form>
 					</Card.Content>
 				</Card.Root>
@@ -496,9 +522,7 @@
 									</select>
 								</div>
 
-								<Button type="button" variant="secondary" onclick={clearFilters}>
-									Clear
-								</Button>
+								<Button type="button" variant="secondary" onclick={clearFilters}>Clear</Button>
 							</div>
 						</Card.Content>
 					</Card.Root>
@@ -535,7 +559,9 @@
 												? 'rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-lg'
 												: 'rounded-2xl border border-white/10 bg-background/50 p-4 transition hover:bg-muted/30'}
 										>
-											<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+											<div
+												class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+											>
 												<div class="space-y-2">
 													<div class="flex flex-wrap items-center gap-2">
 														<p class="text-lg font-bold">{transaction.category}</p>
@@ -572,6 +598,7 @@
 													<Button
 														variant="secondary"
 														size="sm"
+														disabled={saving}
 														onclick={() => startEdit(transaction)}
 													>
 														Edit
@@ -580,6 +607,7 @@
 													<Button
 														variant="destructive"
 														size="sm"
+														disabled={saving}
 														onclick={() => handleDelete(transaction.id)}
 													>
 														Delete
